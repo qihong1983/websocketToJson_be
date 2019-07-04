@@ -8,11 +8,13 @@ var app = require('../app');
 var debug = require('debug')('server:server');
 var http = require('http');
 
+
+
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(process.env.PORT || '3001');
 app.set('port', port);
 
 /**
@@ -23,46 +25,128 @@ var server = http.createServer(app);
 
 let io = require('socket.io')(server);
 
+// var AliMNS = require("ali-mns");
+// const account = new AliMNS.Account("1006056532229157", "LNUDMgZqyY38hoLv", "JcGcPDO62oes5ssJKhm91HrJNXwhNv");
+// const mqBatch = new AliMNS.MQBatch(queueName, account, "beijing");
 
-io.on('connection', function(socket){
-    console.log('a user connected');
-
-    console.log(socket.id);
-
-          var number = Math.random()*99 + 1;
-          number = parseInt(number, 10);
-          io.emit('num', {
-        msg: number
-      })
-
-io.emit('server message', {msg:'client connect server success'});
-
-    socket.on("clientmessage/1234", function(obj) {
-      console.log(obj);
-    });
-
-    socket.on("admin", function (obj) {
-      console.log(obj);
-
-      let client = 'client/' + obj.msg.userid;
-
-      console.log(client);
-
-      io.emit(client, {msg:obj.msg.content});
+var queueName = 'youyongba';
+var AliMNS = require("ali-mns");
+const account = new AliMNS.Account("1435909372813240", "LTAIML0c4KUngOmA", "gbkS2o8UtIVAhs5TovJFHT3SoE2MVX");
+const mqBatch = new AliMNS.MQBatch(queueName, account, "hangzhou");
 
 
-          // let num = 1500-800 = 700
-          // Math.random()*700
-          var number = Math.random()*109 + 1;
-          number = parseInt(number, 10);
 
-          console.log(number);
+setInterval(() => {
+  console.log('setInter ');
+  mqBatch.recvP(5, 1).then(function (data) {
+    // console.log(data);
+    return data.Message;
+  }).then((msg) => {
 
-      io.emit('num', {
-        msg: number
-      })
 
+    console.log(msg, 'msgmsgmsg');
+
+    var body = JSON.parse(msg.MessageBody);
+
+    console.log(body.uuid, 'body.uuid');
+
+    var client = `client/${body.uuid}`;
+
+
+    io.emit(client, {
+      msg: body.notify
     })
+
+
+    mqBatch.deleteP(msg.ReceiptHandle);
+    // msg.forEach((v, k) => {
+
+
+
+    //   var body = JSON.parse(v.MessageBody);
+    // var body = v.MessageBody;
+
+    // console.log(body, 'body');
+    // {
+    //   Message:
+    //   {
+    //     '$': { xmlns: 'http://mns.aliyuncs.com/doc/v1' },
+    //     MessageId: 'F8B890043DE5630C7F856AE90AFB9423',
+    //       MessageBodyMD5: 'D6A6E85D5439ACEE4DC9361B803EDEF4',
+    //       MessageBody: '{\n     "uuid": "d97997d0-9406-11e9-9640-bd99a1e7fa4c",\n     "notify": {\n            "title": "标题",\n            "describe": "描述"\n     }\n}',
+    //       ReceiptHandle: '8-tzuilwsakz3zfzgQz0z6OGzcSLL7l2YQ3n',
+    //       EnqueueTime: '1561112057595',
+    //       FirstDequeueTime: '1561112087640',
+    //       NextVisibleTime: '1561112098119',
+    //       DequeueCount: '2',
+    //       Priority: '8'
+    //   }
+    // }
+
+
+
+    // console.log(body.uuid, 'body.uuid');
+
+    // var client = `client/${body.uuid}`;
+
+
+    // io.emit(client, {
+    //   msg: body.notify
+    // })
+
+    // mqBatch.deleteP(msg[k].ReceiptHandle);
+    // });
+  }, (e) => {
+    console.log(e, 'error');
+  });
+
+}, 3000);
+
+
+
+// send message
+// mq.sendP("Hello ali-mns").then(console.log, console.error);
+
+
+io.on('connection', function (socket) {
+  console.log('a user connected');
+
+  console.log(socket.id);
+
+  var number = Math.random() * 99 + 1;
+  number = parseInt(number, 10);
+  io.emit('num', {
+    msg: number
+  })
+
+  io.emit('server message', { msg: 'client connect server success' });
+
+  socket.on("clientmessage/1234", function (obj) {
+    console.log(obj);
+  });
+
+  socket.on("admin", function (obj) {
+    console.log(obj);
+
+    let client = 'client/' + obj.msg.userid;
+
+    console.log(client);
+
+    io.emit(client, { msg: obj.msg.content });
+
+
+    // let num = 1500-800 = 700
+    // Math.random()*700
+    var number = Math.random() * 109 + 1;
+    number = parseInt(number, 10);
+
+    console.log(number);
+
+    io.emit('num', {
+      msg: number
+    })
+
+  })
 
 
 
